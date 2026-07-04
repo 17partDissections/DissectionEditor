@@ -14,4 +14,7 @@ A lightweight editor for creating, reading, and editing <b>.dissection</b> files
 
 
 ## changelog
+#### v1.1
+Added open_file_from_path function for Windows Open With
+Fixed Cursor position localization update
 #### v1.0

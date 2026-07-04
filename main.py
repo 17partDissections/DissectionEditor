@@ -10,7 +10,7 @@ class Window(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.version = 1.0
+        self.version = 1.1
         self.language = "english"
         self.current_file = None
         self.is_dissection = False
@@ -34,9 +34,11 @@ class Window(QMainWindow):
         self.status_bar.addPermanentWidget(self.cursor_label)
         self.rightLabel = QLabel(f"{languages[self.language]['version']} {self.version}")
         self.status_bar.addPermanentWidget(self.rightLabel)
-        self.textEdit.cursorPositionChanged.connect(self.update_status_bar)
+        self.textEdit.cursorPositionChanged.connect(self.update_cursor_pos)
         self.create_menu()
         self.show()
+
+        if len(sys.argv) > 1: self.open_file_from_path(sys.argv[1])
 
     def create_menu(self):
         menu_bar = self.menuBar()
@@ -146,6 +148,7 @@ class Window(QMainWindow):
         self.language = language
         self.menuBar().clear()
         self.create_menu()
+        self.update_cursor_pos()
         self.rightLabel.setText(f"{languages[self.language]['version']} {self.version}")
         self.status_bar.showMessage(f"{languages[self.language]['language']}: {self.language}", 3000)
     def new(self):
@@ -172,6 +175,23 @@ class Window(QMainWindow):
             "All Files (*)"
         )
         if not filepath: return
+        try:
+            with open(filepath, 'rb') as f: data = f.read()
+            text = unpack(data)
+            if text is not None:
+                self.textEdit.setPlainText(text)
+                self.is_dissection = True
+                self.current_file = filepath
+                self.setWindowTitle(f"Dissection Editor - {filepath}")
+                self.status_bar.showMessage(f"{languages[self.language]['opened_file']}: {filepath}", 3000)
+                return
+            with open(filepath, 'r', encoding='utf-8') as f: self.textEdit.setPlainText(f.read())
+            self.is_dissection = False
+            self.current_file = filepath
+            self.setWindowTitle(f"Dissection Editor - {filepath}")
+            self.status_bar.showMessage(f"{languages[self.language]['opened_file']}: {filepath}", 3000)
+        except Exception as e: QMessageBox.critical(self, "Error", f"Cannot open file:\n{str(e)}")
+    def open_file_from_path(self, filepath):
         try:
             with open(filepath, 'rb') as f: data = f.read()
             text = unpack(data)
@@ -246,7 +266,7 @@ class Window(QMainWindow):
             )
             if reply == QMessageBox.Save: self.save()
             elif reply == QMessageBox.Cancel: return 1
-    def update_status_bar(self):
+    def update_cursor_pos(self):
         cursor = self.textEdit.textCursor()
         line = cursor.blockNumber() + 1
         column = cursor.columnNumber() + 1
